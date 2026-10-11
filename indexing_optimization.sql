@@ -11,9 +11,25 @@
 USE agriconnect;
 
 -- Drop test indexes if already present for idempotent execution
-DROP INDEX IF EXISTS idx_products_cat_price ON products;
-DROP INDEX IF EXISTS idx_orders_buyer_date ON orders;
-DROP INDEX IF EXISTS ft_product_name ON products;
+DELIMITER //
+CREATE PROCEDURE drop_index_if_exists(IN p_table VARCHAR(64), IN p_index VARCHAR(64))
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.statistics 
+        WHERE table_schema = DATABASE() AND table_name = p_table AND index_name = p_index
+    ) THEN
+        SET @sql = CONCAT('ALTER TABLE ', p_table, ' DROP INDEX ', p_index);
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END //
+DELIMITER ;
+
+CALL drop_index_if_exists('products', 'idx_products_cat_price');
+CALL drop_index_if_exists('orders', 'idx_orders_buyer_date');
+CALL drop_index_if_exists('products', 'ft_product_name');
+DROP PROCEDURE IF EXISTS drop_index_if_exists;
 
 -- ------------------------------------------------------------------------------
 -- 1. COMPOSITE INDEX OPTIMIZATION (Category + Price Filter)

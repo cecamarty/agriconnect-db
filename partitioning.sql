@@ -45,7 +45,7 @@ CREATE TABLE fact_order_lines (
     qty DECIMAL(10,2),
     unit_price DECIMAL(10,2),
     line_total DECIMAL(12,2),
-    PRIMARY KEY (order_id, order_date) -- Partition column order_date MUST be in PK
+    PRIMARY KEY (order_id, product_id, order_date) -- Composite PK ensures uniqueness per line and partition pruning
 ) ENGINE=InnoDB
 PARTITION BY RANGE (YEAR(order_date)) (
     PARTITION p2023 VALUES LESS THAN (2024),

@@ -13,10 +13,25 @@ USE agriconnect;
 -- ------------------------------------------------------------------------------
 -- 1. SCHEMA MIGRATION: ADD JSON ATTRIBUTES COLUMN
 -- ------------------------------------------------------------------------------
--- Drop column if re-running
-ALTER TABLE products DROP COLUMN IF EXISTS organic;
-ALTER TABLE products DROP COLUMN IF EXISTS weight_kg;
-ALTER TABLE products DROP COLUMN IF EXISTS attributes;
+DELIMITER //
+CREATE PROCEDURE drop_column_if_exists(IN p_table VARCHAR(64), IN p_column VARCHAR(64))
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = DATABASE() AND table_name = p_table AND column_name = p_column
+    ) THEN
+        SET @sql = CONCAT('ALTER TABLE ', p_table, ' DROP COLUMN ', p_column);
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END //
+DELIMITER ;
+
+CALL drop_column_if_exists('products', 'organic');
+CALL drop_column_if_exists('products', 'weight_kg');
+CALL drop_column_if_exists('products', 'attributes');
+DROP PROCEDURE IF EXISTS drop_column_if_exists;
 
 ALTER TABLE products 
 ADD COLUMN attributes JSON NULL AFTER unit_price;
